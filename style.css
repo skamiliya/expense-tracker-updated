@@ -1,0 +1,177 @@
+/* Basic styling for the expense tracker app.
+   The design is intentionally minimal so it works well on mobile browsers like Safari on iPhone. */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 1rem;
+    background-color: #f7f7f7;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+form#transaction-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 200px;
+}
+
+.form-row label {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.form-row input,
+.form-row select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button[type="submit"] {
+    padding: 0.75rem 1.5rem;
+    background-color: #007aff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-basis: 100%;
+    margin-top: 0.5rem;
+}
+
+button[type="submit"]:hover {
+    background-color: #005bb5;
+}
+
+#balance-display {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+#balance-display h2 {
+    margin: 0;
+}
+
+.export-import {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+#export-btn {
+    padding: 0.5rem 1rem;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#export-btn:hover {
+    background-color: #1e7e34;
+}
+
+/* Style the hidden file input via its label */
+.import-label {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#import-file {
+    display: none;
+}
+
+table#transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+table#transactions-table th,
+table#transactions-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+}
+
+table#transactions-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+table#transactions-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+table#transactions-table img {
+    max-width: 60px;
+    max-height: 60px;
+}
+
+table#transactions-table button.delete-btn {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+table#transactions-table button.delete-btn:hover {
+    background-color: #c82333;
+}
+
+/* Style for the "Add Category" button */
+button.add-category-btn {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+button.add-category-btn:hover {
+    background-color: #5a6268;
+}
+
+.chart-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.note {
+    font-size: 0.75rem;
+    color: #666;
+    text-align: center;
+}
