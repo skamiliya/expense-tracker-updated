@@ -8,10 +8,10 @@
  */
 
 (function () {
-    // Default categories. These are used on first load and can be extended by the user.
-    // Categories are inspired by common household budget categories such as
-    // utilities (electricity, water, gas, internet and phone), food and
-    // transportation【204228792874719†L313-L324】【635020032222003†L429-L437】.
+    // Default categories. These are used on first load and can be extended
+    // by the user. Categories are inspired by common household budget
+    // categories such as utilities (electricity, water, gas, internet
+    // and phone), food and transportation.
     const DEFAULT_CATEGORIES = [
         'Groceries',
         'Hangout/Entertainment',
@@ -27,6 +27,7 @@
         'Savings',
         'Miscellaneous',
     ];
+
     // The categories array used by the app. It is initialized from localStorage
     // so that user‑added categories persist across sessions. If there are
     // no saved categories, we fall back to DEFAULT_CATEGORIES.
@@ -48,7 +49,24 @@
     let categoryChart = null;
 
     /**
-     * Read transactions from localStorage. If none exist, return an empty array.
+     * Generate a palette of distinct colors for the pie chart slices. Uses
+     * the HSL color space to ensure even spacing around the color wheel.
+     *
+     * @param {number} count - number of colors to generate
+     * @returns {string[]} array of CSS color strings
+     */
+    function generateColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            const hue = Math.floor((360 / Math.max(count, 1)) * i);
+            colors.push(`hsl(${hue}, 70%, 60%)`);
+        }
+        return colors;
+    }
+
+    /**
+     * Read transactions from localStorage. If none exist, return an empty
+     * array.
      * @returns {Array<Object>}
      */
     function getTransactions() {
@@ -189,18 +207,12 @@
                 const img = document.createElement('img');
                 img.src = txn.receipt;
                 img.alt = 'Receipt';
-                img.style.cursor = 'pointer';
-                // When clicked, open the image in a new tab for full size viewing
-                img.addEventListener('click', () => {
-                    const win = window.open();
-                    win.document.write(`<img src="${txn.receipt}" style="max-width:100%">`);
-                });
                 receiptCell.appendChild(img);
             } else {
                 receiptCell.textContent = '-';
             }
             row.appendChild(receiptCell);
-            // Delete button cell
+            // Action cell with delete button
             const actionCell = document.createElement('td');
             const delBtn = document.createElement('button');
             delBtn.textContent = 'Delete';
@@ -282,36 +294,28 @@
         });
         const catLabels = Object.keys(categorySums);
         const catData = catLabels.map(k => categorySums[k]);
+        const catColors = generateColors(catLabels.length);
         if (categoryChart) {
             categoryChart.destroy();
         }
         categoryChart = new Chart(categoryChartCanvas.getContext('2d'), {
-            type: 'bar',
+            type: 'pie',
             data: {
                 labels: catLabels,
                 datasets: [
                     {
                         label: 'Expenses by Category',
                         data: catData,
-                        backgroundColor: '#28a745',
+                        backgroundColor: catColors,
                     },
                 ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Category',
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Amount',
-                        },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
                     },
                 },
             },
@@ -468,22 +472,18 @@
 
     /**
      * Initialize the app: populate categories, set up event listeners, and
-     * render initial data.
+     * render the initial UI.
      */
     function init() {
-        // Load categories from storage and populate the select
         categories = loadCategories();
         populateCategories();
-        // Event listeners
         transactionForm.addEventListener('submit', handleAddTransaction);
+        addCategoryBtn.addEventListener('click', handleAddCategory);
         exportButton.addEventListener('click', handleExport);
         importFileInput.addEventListener('change', handleImport);
-        if (addCategoryBtn) {
-            addCategoryBtn.addEventListener('click', handleAddCategory);
-        }
         updateUI();
     }
 
-    // Run init on DOMContentLoaded
+    // Kick off the app once the DOM is ready
     document.addEventListener('DOMContentLoaded', init);
 })();
