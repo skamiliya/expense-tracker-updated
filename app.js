@@ -294,6 +294,14 @@
         });
         const catLabels = Object.keys(categorySums);
         const catData = catLabels.map(k => categorySums[k]);
+        // Compute total to calculate percentage values
+        const total = catData.reduce((sum, v) => sum + v, 0);
+        // Build labels that include the percentage (e.g. "Groceries (25.0%)")
+        const catLabelsWithPercent = catLabels.map((label, idx) => {
+            const value = catData[idx];
+            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+            return `${label} (${pct}%\u00A0)`;
+        });
         const catColors = generateColors(catLabels.length);
         if (categoryChart) {
             categoryChart.destroy();
@@ -301,7 +309,7 @@
         categoryChart = new Chart(categoryChartCanvas.getContext('2d'), {
             type: 'pie',
             data: {
-                labels: catLabels,
+                labels: catLabelsWithPercent,
                 datasets: [
                     {
                         label: 'Expenses by Category',
@@ -316,6 +324,17 @@
                 plugins: {
                     legend: {
                         position: 'bottom',
+                    },
+                    // Customize tooltip to also show percentage values
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.parsed;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+                                const label = context.label.replace(/\s\(.*\)/, '');
+                                return `${label}: ${formatCurrency(val)} (${pct}%)`;
+                            },
+                        },
                     },
                 },
             },
