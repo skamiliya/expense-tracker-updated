@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Expense Summary</title>
+    <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+      defer
+    ></script>
+  </head>
+  <body>
+    <h1>Expense Summary</h1>
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="index.html">Back to Tracker</a>
+    </nav>
+    <!-- Weekly summary section -->
+    <section class="chart-container">
+      <h2>Weekly Expenses</h2>
+      <canvas id="weekly-chart"></canvas>
+    </section>
+    <!-- Monthly summary section -->
+    <section class="chart-container">
+      <h2>Monthly Expenses</h2>
+      <canvas id="monthly-chart"></canvas>
+    </section>
+    <p class="note">
+      The summaries below are generated from the same local storage data used by
+      the main expense tracker. Only expense (not income) transactions are
+      included in these charts.
+    </p>
+    <script src="summary.js"></script>
+  </body>
+</html>

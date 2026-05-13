@@ -98,7 +98,7 @@
         if (!data) return [...DEFAULT_CATEGORIES];
         try {
             const parsed = JSON.parse(data);
-            if (Array.isArray(parsed) && parsed.every(c => typeof c === 'string')) {
+            if (Array.isArray(parsed) && parsed.every((c) => typeof c === 'string')) {
                 return parsed;
             }
         } catch (e) {
@@ -120,7 +120,7 @@
      */
     function populateCategories() {
         categorySelect.innerHTML = '';
-        categories.forEach(cat => {
+        categories.forEach((cat) => {
             const option = document.createElement('option');
             option.value = cat;
             option.textContent = cat;
@@ -135,8 +135,6 @@
      */
     function calculateBalance(transactions) {
         return transactions.reduce((sum, txn) => {
-            // Income transactions have type === 'income' and positive amount
-            // Expense transactions have type === 'expense' and positive amount; we'll subtract them
             const amt = parseFloat(txn.amount);
             if (txn.type === 'income') {
                 return sum + amt;
@@ -175,10 +173,10 @@
      * @param {Array<Object>} transactions
      */
     function updateTransactionsTable(transactions) {
-        // Clear existing rows
         transactionsTableBody.innerHTML = '';
-        // Sort transactions by date ascending for readability
-        const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const sorted = [...transactions].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
         sorted.forEach((txn, index) => {
             const row = document.createElement('tr');
             // Date cell
@@ -232,11 +230,13 @@
      */
     function updateCharts(transactions) {
         // Prepare data for the balance chart: cumulative balance by date
-        const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const sorted = [...transactions].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
         const labels = [];
         const data = [];
         let runningBalance = 0;
-        sorted.forEach(txn => {
+        sorted.forEach((txn) => {
             const amt = parseFloat(txn.amount);
             if (txn.type === 'income') {
                 runningBalance += amt;
@@ -246,7 +246,6 @@
             labels.push(txn.date);
             data.push(runningBalance);
         });
-        // Destroy previous chart instances if they exist to avoid duplication
         if (balanceChart) {
             balanceChart.destroy();
         }
@@ -285,7 +284,7 @@
         });
         // Prepare data for category chart: sum of expenses by category
         const categorySums = {};
-        transactions.forEach(txn => {
+        transactions.forEach((txn) => {
             if (txn.type === 'expense') {
                 const key = txn.category;
                 const amt = parseFloat(txn.amount);
@@ -293,10 +292,8 @@
             }
         });
         const catLabels = Object.keys(categorySums);
-        const catData = catLabels.map(k => categorySums[k]);
-        // Compute total to calculate percentage values
+        const catData = catLabels.map((k) => categorySums[k]);
         const total = catData.reduce((sum, v) => sum + v, 0);
-        // Build labels that include the percentage (e.g. "Groceries (25.0%)")
         const catLabelsWithPercent = catLabels.map((label, idx) => {
             const value = catData[idx];
             const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
@@ -325,10 +322,9 @@
                     legend: {
                         position: 'bottom',
                     },
-                    // Customize tooltip to also show percentage values
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 const val = context.parsed;
                                 const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
                                 const label = context.label.replace(/\s\(.*\)/, '');
@@ -355,8 +351,6 @@
         const description = document.getElementById('description').value;
         const receiptInput = document.getElementById('receipt');
         const file = receiptInput.files[0];
-
-        // Validate required fields
         if (!date || !amount) {
             alert('Please provide both a date and amount.');
             return;
@@ -369,13 +363,11 @@
             description,
             receipt: null,
         };
-        // Function to finalize adding the transaction to storage and updating UI
         const finalize = () => {
             const transactions = getTransactions();
             transactions.push(newTransaction);
             saveTransactions(transactions);
             updateUI();
-            // Reset form
             transactionForm.reset();
         };
         if (file) {
@@ -395,21 +387,23 @@
      * new category name and updates the categories list if valid.
      */
     function handleAddCategory() {
-        const name = prompt('Enter a new category name:').trim();
+        const name = prompt('Enter a new category name:');
         if (!name) {
             return;
         }
-        // Prevent duplicates (case‑insensitive)
-        const exists = categories.some(cat => cat.toLowerCase() === name.toLowerCase());
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        const exists = categories.some(
+            (cat) => cat.toLowerCase() === trimmed.toLowerCase()
+        );
         if (exists) {
             alert('This category already exists.');
             return;
         }
-        categories.push(name);
+        categories.push(trimmed);
         saveCategories(categories);
         populateCategories();
-        // Set the newly added category as selected
-        categorySelect.value = name;
+        categorySelect.value = trimmed;
     }
 
     /**
@@ -418,11 +412,18 @@
      */
     function deleteTransaction(index) {
         const transactions = getTransactions();
-        // Find the sorted order as used in the table to correctly remove
-        const sorted = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const sorted = [...transactions].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
         const txnToRemove = sorted[index];
-        // Remove the item from the original array by finding the matching object
-        const idx = transactions.findIndex(t => t.date === txnToRemove.date && t.amount === txnToRemove.amount && t.type === txnToRemove.type && t.category === txnToRemove.category && t.description === txnToRemove.description);
+        const idx = transactions.findIndex(
+            (t) =>
+                t.date === txnToRemove.date &&
+                t.amount === txnToRemove.amount &&
+                t.type === txnToRemove.type &&
+                t.category === txnToRemove.category &&
+                t.description === txnToRemove.description
+        );
         if (idx !== -1) {
             transactions.splice(idx, 1);
             saveTransactions(transactions);
@@ -440,7 +441,6 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        // Use current date for the filename
         const fileNameDate = new Date().toISOString().split('T')[0];
         a.download = `expense-data-${fileNameDate}.json`;
         document.body.appendChild(a);
@@ -462,9 +462,15 @@
                 const imported = JSON.parse(e.target.result);
                 if (!Array.isArray(imported)) throw new Error('Invalid format');
                 const transactions = getTransactions();
-                // Merge imported data, avoiding duplicates by comparing date, amount, type, category and description
-                imported.forEach(txn => {
-                    const exists = transactions.some(existing => existing.date === txn.date && existing.amount === txn.amount && existing.type === txn.type && existing.category === txn.category && existing.description === txn.description);
+                imported.forEach((txn) => {
+                    const exists = transactions.some(
+                        (existing) =>
+                            existing.date === txn.date &&
+                            existing.amount === txn.amount &&
+                            existing.type === txn.type &&
+                            existing.category === txn.category &&
+                            existing.description === txn.description
+                    );
                     if (!exists) {
                         transactions.push(txn);
                     }

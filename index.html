@@ -1,90 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Expense Tracker</title>
     <!-- Simple styling -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <!-- Chart.js for charts. The library will be loaded from a CDN. -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+      defer
+    ></script>
+  </head>
+  <body>
     <h1>Personal Expense Tracker</h1>
+    <!-- Navigation link to the summary page -->
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="summary.html">View Weekly &amp; Monthly Summary</a>
+    </nav>
     <!-- Form for adding a new transaction -->
     <form id="transaction-form">
-        <div class="form-row">
-            <label for="date">Date</label>
-            <input type="date" id="date" required>
-        </div>
-        <div class="form-row">
-            <label for="type">Type</label>
-            <select id="type">
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-            </select>
-        </div>
-        <div class="form-row">
-            <label for="category">Category</label>
-            <select id="category"></select>
-            <!-- Button to add a new category when none of the existing options fit -->
-            <button type="button" id="add-category-btn" class="add-category-btn">Add Category</button>
-        </div>
-        <div class="form-row">
-            <label for="amount">Amount</label>
-            <input type="number" id="amount" step="0.01" required>
-        </div>
-        <div class="form-row">
-            <label for="description">Description</label>
-            <input type="text" id="description" placeholder="Optional description">
-        </div>
-        <div class="form-row">
-            <label for="receipt">Receipt (optional)</label>
-            <input type="file" id="receipt" accept="image/*">
-        </div>
-        <button type="submit">Add</button>
+      <div class="form-row">
+        <label for="date">Date</label>
+        <input type="date" id="date" required />
+      </div>
+      <div class="form-row">
+        <label for="type">Type</label>
+        <select id="type">
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="category">Category</label>
+        <select id="category"></select>
+        <!-- Button to add a new category when none of the existing options fit -->
+        <button type="button" id="add-category-btn" class="add-category-btn">
+          Add Category
+        </button>
+      </div>
+      <div class="form-row">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" step="0.01" required />
+      </div>
+      <div class="form-row">
+        <label for="description">Description</label>
+        <input
+          type="text"
+          id="description"
+          placeholder="Optional description"
+        />
+      </div>
+      <div class="form-row">
+        <label for="receipt">Receipt (optional)</label>
+        <input type="file" id="receipt" accept="image/*" />
+      </div>
+      <button type="submit">Add</button>
     </form>
 
     <!-- Display current balance -->
     <div id="balance-display">
-        <h2>Current Balance: <span id="balance-value">0</span></h2>
+      <h2>
+        Current Balance: <span id="balance-value">¥0</span>
+      </h2>
     </div>
 
     <!-- Export/import buttons -->
     <div class="export-import">
-        <button id="export-btn">Export Data</button>
-        <label for="import-file" class="import-label">Import Data</label>
-        <input type="file" id="import-file" accept="application/json">
+      <button id="export-btn">Export Data</button>
+      <label for="import-file" class="import-label">Import Data</label>
+      <input type="file" id="import-file" accept="application/json" />
     </div>
 
     <!-- Table of transactions -->
     <table id="transactions-table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Amount</th>
-                <th>Description</th>
-                <th>Receipt</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Category</th>
+          <th>Amount</th>
+          <th>Description</th>
+          <th>Receipt</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
     </table>
 
     <!-- Chart for balance over time -->
     <div class="chart-container">
-        <canvas id="balance-chart"></canvas>
+      <canvas id="balance-chart"></canvas>
     </div>
 
     <!-- Chart for spending by category -->
     <div class="chart-container">
-        <canvas id="category-chart"></canvas>
+      <canvas id="category-chart"></canvas>
     </div>
 
-    <p class="note">This simple web app runs entirely in your browser using local storage. You can export your data and re-import it later if you switch devices or clear your browser history.</p>
+    <p class="note">
+      This simple web app runs entirely in your browser using local storage. You
+      can export your data and re-import it later if you switch devices or
+      clear your browser history.
+    </p>
 
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
