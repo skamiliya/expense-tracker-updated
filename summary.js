@@ -142,53 +142,61 @@
         totalsDiv.appendChild(incomeP);
         totalsDiv.appendChild(expenseP);
         section.appendChild(totalsDiv);
-        // Pie chart canvas
-        const canvas = document.createElement('canvas');
-        canvas.id = `pie-chart-${periodType}-${periodKey}`;
-        canvas.style.minHeight = '250px';
-        section.appendChild(canvas);
-        container.appendChild(section);
-        // Prepare data for pie chart
+        // Prepare data for pie chart and ranking
         const catLabels = Object.keys(item.categories);
         const catData = catLabels.map((k) => item.categories[k]);
         const total = catData.reduce((sum, v) => sum + v, 0);
-        const catLabelsWithPercent = catLabels.map((label, idx) => {
-            const value = catData[idx];
-            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-            return `${label} (${pct}%\u00A0)`;
-        });
+        // Build ranking array sorted by descending value
+        const ranking = catLabels
+            .map((label, idx) => ({ label, value: catData[idx] }))
+            .sort((a, b) => b.value - a.value);
+        // Chart labels with percentage displayed in tooltip only, not in legend
         const colors = generateColors(catLabels.length);
-        new Chart(canvas.getContext('2d'), {
-            type: 'pie',
-            data: {
-                labels: catLabelsWithPercent,
-                datasets: [
-                    {
-                        data: catData,
-                        backgroundColor: colors,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const value = context.parsed;
-                                const label = context.label.replace(/\s\(.*\)/, '');
-                                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                                return `${label}: ${formatCurrency(value)} (${pct}%)`;
-                            },
-                        },
-                    },
-                },
-            },
+        // Create a simple pie chart using CSS conic-gradient instead of Chart.js
+        // This avoids loading external libraries and works offline. Each category slice is represented
+        // by a color segment in the conic-gradient. If there are no expense categories, no chart is drawn.
+        if (catLabels.length > 0) {
+            let startPct = 0;
+            const segments = catLabels.map((label, idx) => {
+                const value = catData[idx];
+                const pct = total > 0 ? (value / total) * 100 : 0;
+                const endPct = startPct + pct;
+                const segment = `${colors[idx]} ${startPct.toFixed(2)}% ${endPct.toFixed(2)}%`;
+                startPct = endPct;
+                return segment;
+            });
+            const gradientStr = segments.join(', ');
+            const pieDiv = document.createElement('div');
+            // Assign the pie-chart class so sizing and layout come from CSS
+            pieDiv.className = 'pie-chart';
+            pieDiv.style.background = `conic-gradient(${gradientStr})`;
+            // Create a white centre donut using a CSS class instead of inline styles for better responsiveness
+            const center = document.createElement('div');
+            center.className = 'center';
+            pieDiv.appendChild(center);
+            section.appendChild(pieDiv);
+        }
+        // Append ranking list below the chart
+        const rankingDiv = document.createElement('div');
+        rankingDiv.style.marginTop = '0.5rem';
+        const rankingTitle = document.createElement('p');
+        rankingTitle.style.fontWeight = 'bold';
+        rankingTitle.textContent = 'Ranking Kategori';
+        rankingDiv.appendChild(rankingTitle);
+        const ul = document.createElement('ul');
+        ul.style.margin = '0';
+        ul.style.padding = '0 0 0 1rem';
+        ranking.forEach((item) => {
+            const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+            const li = document.createElement('li');
+            li.textContent = `${item.label}: ${formatCurrency(item.value)} (${pct}%)`;
+            ul.appendChild(li);
         });
+        rankingDiv.appendChild(ul);
+        // Append ranking list after the chart canvas
+        section.appendChild(rankingDiv);
+        // Append the section to container
+        container.appendChild(section);
     }
 
     /**

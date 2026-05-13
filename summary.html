@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Expense Summary</title>
     <link rel="stylesheet" href="style.css" />
-    <script
-      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
-      defer
-    ></script>
+    <!-- Chart.js is no longer needed because the summary uses a CSS-based pie chart. -->
   </head>
   <body>
     <h1>Expense Summary</h1>
@@ -16,14 +13,14 @@
       <a href="index.html">Back to Tracker</a>
     </nav>
     <!-- Selector for period type and value -->
-    <div style="text-align: center; margin-bottom: 1rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; align-items: center;">
+    <div class="summary-controls">
       <label for="period-selector"><strong>Pilih Jenis Periode:</strong></label>
-      <select id="period-selector" style="padding: 0.25rem 0.5rem;">
+      <select id="period-selector">
         <option value="weekly">Per Minggu</option>
         <option value="monthly">Per Bulan</option>
       </select>
       <label for="period-value-selector"><strong>Pilih Periode:</strong></label>
-      <select id="period-value-selector" style="padding: 0.25rem 0.5rem;">
+      <select id="period-value-selector">
         <!-- Options will be populated dynamically -->
       </select>
     </div>
@@ -35,6 +32,7 @@
       menunjukkan persentase tiap kategori pengeluaran. Ringkasan ini
       menggunakan data yang sama dengan pencatat pengeluaran utama.
     </p>
-    <script src="summary.js"></script>
+    <!-- Append a version query to force browsers to load the latest summary.js, avoiding cache issues -->
+    <script src="summary.js?v=20260513" defer></script>
   </body>
 </html>

@@ -170,6 +170,67 @@ button.add-category-btn:hover {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Base styling for the custom pie chart */
+/* Sizing and layout for the custom pie chart.  The default size keeps the chart
+   compact on desktop screens, and it adjusts for smaller devices in the
+   mobile media query below. */
+.pie-chart {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative;
+}
+.pie-chart .center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background-color: #fff;
+}
+
+@media (max-width: 600px) {
+    .pie-chart {
+        /* Reduce chart size further on very small screens to minimize vertical scrolling */
+        width: 120px;
+        height: 120px;
+    }
+    .pie-chart .center {
+        width: 50%;
+        height: 50%;
+    }
+}
+
+/* Controls container for summary page (period selectors) */
+.summary-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 600px) {
+    .summary-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .summary-controls label {
+        margin-bottom: 0.25rem;
+    }
+    .summary-controls select {
+        width: 100%;
+    }
+    .chart-container {
+        padding: 0.75rem;
+    }
+}
+
 .note {
     font-size: 0.75rem;
     color: #666;
