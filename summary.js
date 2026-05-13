@@ -6,6 +6,7 @@
  * renders bar charts using Chart.js to visualize spending over time.
  */
 
+// Wrap everything in an IIFE to avoid polluting the global scope
 (function () {
     /**
      * Read transactions from localStorage. If none exist, return an empty array.
@@ -51,80 +52,119 @@
     }
 
     /**
-     * Group expenses by ISO week. Returns an object with keys like "2026-W20"
-     * and values equal to the total expense for that week.
+     * Group transactions by period (weekly or monthly) and compute totals and
+     * category breakdown for each period.
      * @param {Array<Object>} transactions
+     * @param {string} periodType 'weekly' or 'monthly'
+     * @returns {Object} summary keyed by period label
      */
-    function computeWeeklyExpenses(transactions) {
-        const weekly = {};
+    function groupTransactions(transactions, periodType) {
+        const summary = {};
         transactions.forEach((txn) => {
-            if (txn.type !== 'expense') return;
             const d = new Date(txn.date);
             if (isNaN(d)) return;
-            const year = d.getFullYear();
-            const week = getISOWeek(d);
-            const key = `${year}-W${week.toString().padStart(2, '0')}`;
+            let periodKey;
+            if (periodType === 'weekly') {
+                const week = getISOWeek(d).toString().padStart(2, '0');
+                periodKey = `${d.getFullYear()}-W${week}`;
+            } else {
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                periodKey = `${d.getFullYear()}-${month}`;
+            }
+            if (!summary[periodKey]) {
+                summary[periodKey] = {
+                    totalIncome: 0,
+                    totalExpense: 0,
+                    categories: {},
+                };
+            }
             const amt = parseFloat(txn.amount);
-            weekly[key] = (weekly[key] || 0) + amt;
+            if (txn.type === 'income') {
+                summary[periodKey].totalIncome += amt;
+            } else if (txn.type === 'expense') {
+                summary[periodKey].totalExpense += amt;
+                const cat = txn.category;
+                summary[periodKey].categories[cat] =
+                    (summary[periodKey].categories[cat] || 0) + amt;
+            }
         });
-        return weekly;
+        return summary;
     }
 
     /**
-     * Group expenses by month. Returns an object with keys like "2026-05"
-     * and values equal to the total expense for that month.
-     * @param {Array<Object>} transactions
+     * Generate a palette of distinct colors for a pie chart.
+     * Uses HSL color space to ensure even spacing around the color wheel.
+     * @param {number} count
+     * @returns {string[]}
      */
-    function computeMonthlyExpenses(transactions) {
-        const monthly = {};
-        transactions.forEach((txn) => {
-            if (txn.type !== 'expense') return;
-            const d = new Date(txn.date);
-            if (isNaN(d)) return;
-            const year = d.getFullYear();
-            const month = (d.getMonth() + 1).toString().padStart(2, '0');
-            const key = `${year}-${month}`;
-            const amt = parseFloat(txn.amount);
-            monthly[key] = (monthly[key] || 0) + amt;
-        });
-        return monthly;
+    function generateColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            const hue = Math.floor((360 / Math.max(count, 1)) * i);
+            colors.push(`hsl(${hue}, 70%, 60%)`);
+        }
+        return colors;
     }
 
     /**
-     * Convert an object of key-value pairs into sorted arrays of labels and
-     * data. The keys are sorted chronologically based on their natural
-     * ordering (e.g. "2026-W01" < "2026-W02" and "2026-01" < "2026-02").
-     * @param {Object} groups
+     * Render the summary for a specific period.
+     * @param {string} periodType 'weekly' or 'monthly'
+     * @param {string} periodKey The selected period key (e.g. '2026-W19' or '2026-05')
      */
-    function toSortedArrays(groups) {
-        const keys = Object.keys(groups).sort();
-        const labels = keys;
-        const data = keys.map((k) => groups[k]);
-        return { labels, data };
-    }
-
-    /**
-     * Render a bar chart given a canvas element, labels and data. Title is used
-     * as the chart title and axis label.
-     * @param {HTMLCanvasElement} canvas
-     * @param {string[]} labels
-     * @param {number[]} data
-     * @param {string} title
-     */
-    function renderBarChart(canvas, labels, data, title) {
-        // generate colors for each bar using a gradient palette
-        const colors = labels.map((_, idx) => {
-            const hue = Math.floor((360 / Math.max(labels.length, 1)) * idx);
-            return `hsl(${hue}, 70%, 60%)`;
+    function renderSummary(periodType, periodKey) {
+        const container = document.getElementById('summary-container');
+        container.innerHTML = '';
+        const transactions = getTransactions();
+        const grouped = groupTransactions(transactions, periodType);
+        if (!grouped[periodKey]) {
+            // If there's no data for the chosen period, display a friendly message
+            const msg = document.createElement('p');
+            msg.textContent = 'Tidak ada data untuk periode ini.';
+            container.appendChild(msg);
+            return;
+        }
+        const item = grouped[periodKey];
+        const section = document.createElement('section');
+        section.className = 'chart-container';
+        // Period title
+        const header = document.createElement('h3');
+        header.textContent = periodKey;
+        section.appendChild(header);
+        // Totals display
+        const totalsDiv = document.createElement('div');
+        totalsDiv.style.display = 'flex';
+        totalsDiv.style.justifyContent = 'space-between';
+        totalsDiv.style.marginBottom = '0.5rem';
+        const incomeP = document.createElement('p');
+        incomeP.textContent = `Total Income: ${formatCurrency(item.totalIncome)}`;
+        const expenseP = document.createElement('p');
+        expenseP.textContent = `Total Expense: ${formatCurrency(item.totalExpense)}`;
+        totalsDiv.appendChild(incomeP);
+        totalsDiv.appendChild(expenseP);
+        section.appendChild(totalsDiv);
+        // Pie chart canvas
+        const canvas = document.createElement('canvas');
+        canvas.id = `pie-chart-${periodType}-${periodKey}`;
+        canvas.style.minHeight = '250px';
+        section.appendChild(canvas);
+        container.appendChild(section);
+        // Prepare data for pie chart
+        const catLabels = Object.keys(item.categories);
+        const catData = catLabels.map((k) => item.categories[k]);
+        const total = catData.reduce((sum, v) => sum + v, 0);
+        const catLabelsWithPercent = catLabels.map((label, idx) => {
+            const value = catData[idx];
+            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+            return `${label} (${pct}%\u00A0)`;
         });
-        return new Chart(canvas.getContext('2d'), {
-            type: 'bar',
+        const colors = generateColors(catLabels.length);
+        new Chart(canvas.getContext('2d'), {
+            type: 'pie',
             data: {
-                labels: labels,
+                labels: catLabelsWithPercent,
                 datasets: [
                     {
-                        label: title,
-                        data: data,
+                        data: catData,
                         backgroundColor: colors,
                     },
                 ],
@@ -132,26 +172,17 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: title.includes('Weekly') ? 'Week' : 'Month',
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Total Expense',
-                        },
-                    },
-                },
                 plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
                     tooltip: {
                         callbacks: {
                             label: function (context) {
-                                const val = context.parsed.y;
-                                return `${formatCurrency(val)}`;
+                                const value = context.parsed;
+                                const label = context.label.replace(/\s\(.*\)/, '');
+                                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return `${label}: ${formatCurrency(value)} (${pct}%)`;
                             },
                         },
                     },
@@ -161,28 +192,61 @@
     }
 
     /**
-     * Initialize summary charts after DOMContentLoaded.
+     * Populate the period value selector based on available transaction data and selected period type.
+     * @param {string} periodType
+     */
+    function populatePeriodValues(periodType) {
+        const valueSelect = document.getElementById('period-value-selector');
+        valueSelect.innerHTML = '';
+        const transactions = getTransactions();
+        const grouped = groupTransactions(transactions, periodType);
+        const keys = Object.keys(grouped).sort();
+        if (keys.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Tidak ada data';
+            valueSelect.appendChild(opt);
+            return;
+        }
+        keys.forEach((key, idx) => {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = key;
+            valueSelect.appendChild(opt);
+        });
+    }
+
+    /**
+     * Initialize the summary page: set up the period selectors and render the
+     * default summary for the first available period.
      */
     function init() {
-        const transactions = getTransactions();
-        const weekly = computeWeeklyExpenses(transactions);
-        const monthly = computeMonthlyExpenses(transactions);
-        const weeklyArrays = toSortedArrays(weekly);
-        const monthlyArrays = toSortedArrays(monthly);
-        const weeklyCanvas = document.getElementById('weekly-chart');
-        const monthlyCanvas = document.getElementById('monthly-chart');
-        renderBarChart(
-            weeklyCanvas,
-            weeklyArrays.labels,
-            weeklyArrays.data,
-            'Weekly Expenses'
-        );
-        renderBarChart(
-            monthlyCanvas,
-            monthlyArrays.labels,
-            monthlyArrays.data,
-            'Monthly Expenses'
-        );
+        const periodTypeSelect = document.getElementById('period-selector');
+        const periodValueSelect = document.getElementById('period-value-selector');
+        // Populate initial options for period values
+        const initialType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
+        populatePeriodValues(initialType);
+        // Listen for changes to period type
+        periodTypeSelect.addEventListener('change', () => {
+            const selectedType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
+            populatePeriodValues(selectedType);
+            // After repopulating, select the first option and render
+            const firstValue = periodValueSelect.value;
+            renderSummary(selectedType, firstValue);
+        });
+        // Listen for changes to period value
+        periodValueSelect.addEventListener('change', () => {
+            const selectedType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
+            const periodKey = periodValueSelect.value;
+            if (periodKey) {
+                renderSummary(selectedType, periodKey);
+            }
+        });
+        // Initial render for first available period
+        const initialValue = periodValueSelect.value;
+        if (initialValue) {
+            renderSummary(initialType, initialValue);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', init);
