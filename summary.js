@@ -52,6 +52,110 @@
     }
 
     /**
+     * Convert an ISO week number and year into the start (Monday) date of that week.
+     * Adapted from: https://stackoverflow.com/a/6117917
+     * @param {number} week
+     * @param {number} year
+     * @returns {Date} Date object representing the Monday of the ISO week
+     */
+    function getDateOfISOWeek(week, year) {
+        // Create a simple date from the first day of the year and advance to the week
+        const simple = new Date(year, 0, 1 + (week - 1) * 7);
+        // ISO weeks start on Monday. Adjust backwards to Monday if we're past Thursday; else forward
+        const day = simple.getDay();
+        // JS getDay: 0=Sunday, 1=Monday, ... 6=Saturday
+        if (day <= 4) {
+            simple.setDate(simple.getDate() - day + 1);
+        } else {
+            simple.setDate(simple.getDate() + 8 - day);
+        }
+        return simple;
+    }
+
+    /**
+     * Count the number of ISO weeks that overlap a given month.
+     * This is done by iterating through each day of the month and
+     * collecting unique ISO week numbers.
+     * @param {number} year Full year, e.g. 2026
+     * @param {number} month Month number 1–12
+     * @returns {number}
+     */
+    function countWeeksInMonth(year, month) {
+        const weeks = new Set();
+        // month in JS Date is zero-based; convert to 0-based index
+        const d = new Date(year, month - 1, 1);
+        while (d.getMonth() === month - 1) {
+            weeks.add(getISOWeek(d));
+            d.setDate(d.getDate() + 1);
+        }
+        return weeks.size || 1;
+    }
+
+    /**
+     * Retrieve saved monthly saving targets from localStorage.
+     * Returns an object keyed by YYYY-MM with numeric values.
+     * @returns {Object}
+     */
+    function getSavingTargets() {
+        const data = localStorage.getItem('savingTargets');
+        if (!data) return {};
+        try {
+            return JSON.parse(data);
+        } catch (e) {
+            console.error('Failed to parse savingTargets from localStorage', e);
+            return {};
+        }
+    }
+
+    /**
+     * Persist the saving targets object to localStorage.
+     * @param {Object} targets
+     */
+    function saveSavingTargets(targets) {
+        localStorage.setItem('savingTargets', JSON.stringify(targets));
+    }
+
+    /**
+     * Get monthly saving target for a given year-month key.
+     * @param {string} yearMonth Format 'YYYY-MM'
+     * @returns {number}
+     */
+    function getMonthlyTarget(yearMonth) {
+        const targets = getSavingTargets();
+        return parseFloat(targets[yearMonth]) || 0;
+    }
+
+    /**
+     * Set the monthly saving target for a given year-month key.
+     * @param {string} yearMonth Format 'YYYY-MM'
+     * @param {number} value
+     */
+    function setMonthlyTarget(yearMonth, value) {
+        const targets = getSavingTargets();
+        targets[yearMonth] = value;
+        saveSavingTargets(targets);
+    }
+
+    /**
+     * Given a period key, return the associated year-month key for savings.
+     * If the period is weekly (e.g. '2026-W19'), derive the month from the start date
+     * of that ISO week. If monthly, return the period key itself.
+     * @param {string} periodKey
+     * @returns {string} Year-month format 'YYYY-MM'
+     */
+    function getYearMonthFromPeriod(periodKey) {
+        if (periodKey.includes('-W')) {
+            const parts = periodKey.split('-W');
+            const year = parseInt(parts[0], 10);
+            const week = parseInt(parts[1], 10);
+            const start = getDateOfISOWeek(week, year);
+            const month = String(start.getMonth() + 1).padStart(2, '0');
+            return `${start.getFullYear()}-${month}`;
+        }
+        return periodKey;
+    }
+
+    /**
      * Group transactions by period (weekly or monthly) and compute totals and
      * category breakdown for each period.
      * @param {Array<Object>} transactions
@@ -126,9 +230,25 @@
         const item = grouped[periodKey];
         const section = document.createElement('section');
         section.className = 'chart-container';
-        // Period title
+        // Period title. Show a date range for weekly periods.
         const header = document.createElement('h3');
-        header.textContent = periodKey;
+        if (periodType === 'weekly' && periodKey.includes('-W')) {
+            const parts = periodKey.split('-W');
+            const year = parseInt(parts[0], 10);
+            const week = parseInt(parts[1], 10);
+            const startDate = getDateOfISOWeek(week, year);
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            const format = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
+            header.textContent = `${format(startDate)} - ${format(endDate)}`;
+        } else {
+            header.textContent = periodKey;
+        }
         section.appendChild(header);
         // Totals display
         const totalsDiv = document.createElement('div');
@@ -142,6 +262,44 @@
         totalsDiv.appendChild(incomeP);
         totalsDiv.appendChild(expenseP);
         section.appendChild(totalsDiv);
+
+        // Savings goal and difference display
+        // Determine the month key for savings based on selected period
+        const monthKey = getYearMonthFromPeriod(periodKey);
+        const monthlyTarget = getMonthlyTarget(monthKey);
+        let savingsGoal = monthlyTarget;
+        if (periodType === 'weekly') {
+            // When viewing a weekly period, divide the monthly target evenly among the number of weeks in that month
+            const parts = monthKey.split('-');
+            const yr = parseInt(parts[0], 10);
+            const mo = parseInt(parts[1], 10);
+            const weeksInMonth = countWeeksInMonth(yr, mo);
+            savingsGoal = weeksInMonth > 0 ? monthlyTarget / weeksInMonth : monthlyTarget;
+        }
+        // Calculate the difference between the goal and the actual expenses for this period
+        const difference = savingsGoal - item.totalExpense;
+        // Also compute remaining budget after saving and spending
+        const remainingBudget = item.totalIncome - item.totalExpense - savingsGoal;
+        const savingsDiv = document.createElement('div');
+        savingsDiv.style.display = 'flex';
+        savingsDiv.style.justifyContent = 'space-between';
+        savingsDiv.style.marginBottom = '0.5rem';
+        // Target savings label
+        const goalP = document.createElement('p');
+        goalP.textContent = periodType === 'weekly'
+            ? `Target Tabungan Minggu: ${formatCurrency(savingsGoal)}`
+            : `Target Tabungan Bulan: ${formatCurrency(monthlyTarget)}`;
+        // Difference between savings goal and expense (positive means goal > expense)
+        const diffP = document.createElement('p');
+        diffP.textContent = `Selisih Tabungan: ${formatCurrency(difference)}`;
+        // Remaining budget after deducting expenses and savings from income
+        const remP = document.createElement('p');
+        remP.textContent = `Sisa Budget: ${formatCurrency(remainingBudget)}`;
+        // Append all pieces
+        savingsDiv.appendChild(goalP);
+        savingsDiv.appendChild(diffP);
+        savingsDiv.appendChild(remP);
+        section.appendChild(savingsDiv);
         // Prepare data for pie chart and ranking
         const catLabels = Object.keys(item.categories);
         const catData = catLabels.map((k) => item.categories[k]);
@@ -216,10 +374,27 @@
             valueSelect.appendChild(opt);
             return;
         }
-        keys.forEach((key, idx) => {
+        keys.forEach((key) => {
             const opt = document.createElement('option');
             opt.value = key;
-            opt.textContent = key;
+            // If weekly, display date range; else display month key directly
+            if (periodType === 'weekly' && key.includes('-W')) {
+                const parts = key.split('-W');
+                const year = parseInt(parts[0], 10);
+                const week = parseInt(parts[1], 10);
+                const startDate = getDateOfISOWeek(week, year);
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                const format = (date) => {
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                };
+                opt.textContent = `${format(startDate)} - ${format(endDate)}`;
+            } else {
+                opt.textContent = key;
+            }
             valueSelect.appendChild(opt);
         });
     }
@@ -231,15 +406,32 @@
     function init() {
         const periodTypeSelect = document.getElementById('period-selector');
         const periodValueSelect = document.getElementById('period-value-selector');
+        const savingsInput = document.getElementById('savings-input');
+        const saveButton = document.getElementById('save-savings-btn');
+
+        // Helper to update the savings input based on currently selected period
+        function updateSavingsInput() {
+            const periodKey = periodValueSelect.value;
+            if (!periodKey) return;
+            const monthKey = getYearMonthFromPeriod(periodKey);
+            const target = getMonthlyTarget(monthKey);
+            // If there's a target, set it, else empty string
+            savingsInput.value = target ? target : '';
+        }
+
         // Populate initial options for period values
         const initialType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
         populatePeriodValues(initialType);
+        // After populating, update savings input for initial period
+        updateSavingsInput();
+
         // Listen for changes to period type
         periodTypeSelect.addEventListener('change', () => {
             const selectedType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
             populatePeriodValues(selectedType);
             // After repopulating, select the first option and render
             const firstValue = periodValueSelect.value;
+            updateSavingsInput();
             renderSummary(selectedType, firstValue);
         });
         // Listen for changes to period value
@@ -247,8 +439,22 @@
             const selectedType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
             const periodKey = periodValueSelect.value;
             if (periodKey) {
+                updateSavingsInput();
                 renderSummary(selectedType, periodKey);
             }
+        });
+        // Listen for saving target changes
+        saveButton.addEventListener('click', () => {
+            const periodKey = periodValueSelect.value;
+            if (!periodKey) return;
+            const monthKey = getYearMonthFromPeriod(periodKey);
+            const value = parseFloat(savingsInput.value);
+            if (!isNaN(value)) {
+                setMonthlyTarget(monthKey, value);
+            }
+            // Re-render summary to reflect updated savings info
+            const selectedType = periodTypeSelect.value === 'monthly' ? 'monthly' : 'weekly';
+            renderSummary(selectedType, periodValueSelect.value);
         });
         // Initial render for first available period
         const initialValue = periodValueSelect.value;

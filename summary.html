@@ -24,6 +24,13 @@
         <!-- Options will be populated dynamically -->
       </select>
     </div>
+
+    <!-- Savings target input for the selected month -->
+    <div class="savings-target">
+      <label for="savings-input"><strong>Target Tabungan Bulan Ini:</strong></label>
+      <input type="number" id="savings-input" min="0" step="1" placeholder="0" />
+      <button id="save-savings-btn" type="button">Simpan</button>
+    </div>
     <!-- Container for dynamic summary section -->
     <div id="summary-container"></div>
     <p class="note">
