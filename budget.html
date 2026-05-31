@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Budget Planner</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Budget Planner</h1>
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="index.html">Back to Tracker</a> |
+      <a href="summary.html">Summary</a>
+    </nav>
+    <!-- Controls for selecting the month/date -->
+    <div class="budget-controls">
+      <label for="budget-date"><strong>Pilih Tanggal:</strong></label>
+      <input type="date" id="budget-date" />
+      <button id="load-budget" type="button">Load</button>
+    </div>
+    <!-- Dynamic budget list for categories -->
+    <div id="budget-list"></div>
+    <!-- Save budgets button -->
+    <div style="text-align: center; margin-top: 1rem;">
+      <button id="save-budget" type="button">Simpan Target</button>
+    </div>
+    <!-- Budget script with cache busting parameter to avoid caching issues -->
+    <script src="budget.js?v=20260531" defer></script>
+  </body>
+</html>

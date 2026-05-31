@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Saving Planner</title>
+    <!-- Reuse the main stylesheet for consistent styling across pages -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Saving Planner</h1>
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="index.html">Back to Tracker</a> |
+      <a href="summary.html">Summary</a> |
+      <a href="budget.html">Budget Planner</a>
+    </nav>
+    <!-- Controls for selecting the date. Users can choose any date; the month will be derived from this -->
+    <div class="budget-controls">
+      <label for="saving-date"><strong>Pilih Tanggal:</strong></label>
+      <input type="date" id="saving-date" />
+      <button id="load-saving" type="button">Load</button>
+    </div>
+    <!-- Dynamic list for saving targets per category -->
+    <div id="saving-list"></div>
+    <!-- Save button for saving targets -->
+    <div style="text-align: center; margin-top: 1rem;">
+      <button id="save-saving" type="button">Simpan Target</button>
+    </div>
+    <!-- Include the saving script with a cache-busting query to avoid stale caching -->
+    <script src="saving.js?v=20260531" defer></script>
+  </body>
+</html>

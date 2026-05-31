@@ -279,3 +279,74 @@ button.add-category-btn:hover {
         margin-bottom: 0.25rem;
     }
 }
+
+/* ========================= */
+/* Budget planner styles */
+
+/* Controls for budget page */
+.budget-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.budget-controls input[type="date"] {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.budget-controls button {
+    padding: 0.4rem 0.75rem;
+    background-color: #007aff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.budget-controls button:hover {
+    background-color: #005bb5;
+}
+
+/* Budget table styling */
+.budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.budget-table th,
+.budget-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+}
+.budget-table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+.budget-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+.budget-table input[type="number"] {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .budget-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .budget-controls input[type="date"],
+    .budget-controls button {
+        width: 100%;
+    }
+}
