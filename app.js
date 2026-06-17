@@ -13,6 +13,7 @@
     // categories such as utilities (electricity, water, gas, internet
     // and phone), food and transportation.
     const DEFAULT_CATEGORIES = [
+        // Core spending categories
         'Groceries',
         'Hangout/Entertainment',
         'Commute/Transportation',
@@ -24,8 +25,11 @@
         'Housing/Rent',
         'Insurance',
         'Medical/Healthcare',
-        'Savings',
         'Miscellaneous',
+        // Default saving categories
+        'Investment',
+        'Holiday',
+        'Saving',
     ];
 
     // The categories array used by the app. It is initialized from localStorage

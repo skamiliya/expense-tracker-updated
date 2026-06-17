@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Financial Planner</title>
+    <!-- Use the same stylesheet for consistency across pages -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Financial Planner</h1>
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="index.html">Back to Tracker</a> |
+      <a href="summary.html">Summary</a>
+    </nav>
+    <!-- Controls for selecting the month/date and deposit date (1 or 20) -->
+    <div class="budget-controls">
+      <label for="planner-date"><strong>Pilih Tanggal:</strong></label>
+      <input type="date" id="planner-date" />
+      <label for="planner-deposit-date"><strong>Tanggal Bujet (1 atau 20):</strong></label>
+      <select id="planner-deposit-date">
+        <option value="1">1</option>
+        <option value="20">20</option>
+      </select>
+      <button id="load-planner" type="button">Load</button>
+    </div>
+    <!-- Dynamic list for budgets per category -->
+    <div id="planner-list"></div>
+    <!-- Save button -->
+    <div style="text-align: center; margin-top: 1rem;">
+      <button id="save-planner" type="button">Simpan Target</button>
+    </div>
+    <p class="note">
+      Halaman ini memungkinkan Anda menetapkan target bulanan untuk setiap kategori
+      pengeluaran dan tabungan. Target mingguan dihitung otomatis dengan
+      membagi target bulanan dengan jumlah minggu dalam bulan yang dipilih.
+      Kategori tabungan bawaan mencakup Investment, Holiday dan Saving. Anda
+      dapat menambahkan kategori lain melalui menu Add Category di halaman utama.
+    </p>
+    <!-- Include the planner script with cache-busting query -->
+    <script src="planner.js?v=20260617" defer></script>
+  </body>
+</html>

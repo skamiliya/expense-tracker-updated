@@ -12,34 +12,21 @@
     <nav style="text-align: center; margin-bottom: 1rem;">
       <a href="index.html">Back to Tracker</a>
     </nav>
-    <!-- Selector for period type and value -->
+    <!-- Date selector for weekly and monthly summary -->
     <div class="summary-controls">
-      <label for="period-selector"><strong>Pilih Jenis Periode:</strong></label>
-      <select id="period-selector">
-        <option value="weekly">Per Minggu</option>
-        <option value="monthly">Per Bulan</option>
-      </select>
-      <label for="period-value-selector"><strong>Pilih Periode:</strong></label>
-      <select id="period-value-selector">
-        <!-- Options will be populated dynamically -->
-      </select>
-    </div>
-
-    <!-- Savings target input for the selected month -->
-    <div class="savings-target">
-      <label for="savings-input"><strong>Target Tabungan Bulan Ini:</strong></label>
-      <input type="number" id="savings-input" min="0" step="1" placeholder="0" />
-      <button id="save-savings-btn" type="button">Simpan</button>
+      <label for="summary-date"><strong>Pilih Tanggal:</strong></label>
+      <input type="date" id="summary-date" />
+      <button id="load-summary" type="button">Load</button>
     </div>
     <!-- Container for dynamic summary section -->
     <div id="summary-container"></div>
     <p class="note">
-      Pilih jenis periode dan periode spesifik di atas untuk melihat jumlah total pemasukan dan
-      pengeluaran untuk minggu atau bulan tersebut, serta bagan lingkaran yang
-      menunjukkan persentase tiap kategori pengeluaran. Ringkasan ini
-      menggunakan data yang sama dengan pencatat pengeluaran utama.
+      Pilih tanggal di atas untuk menampilkan ringkasan mingguan dan bulanan yang
+      mencakup tanggal tersebut. Total pemasukan dan pengeluaran, serta
+      persentase setiap kategori pengeluaran akan ditampilkan untuk minggu
+      (Senin–Minggu) dan bulan yang dipilih.
     </p>
     <!-- Append a version query to force browsers to load the latest summary.js, avoiding cache issues -->
-    <script src="summary.js?v=20260513" defer></script>
+    <script src="summary.js?v=20260617" defer></script>
   </body>
 </html>
