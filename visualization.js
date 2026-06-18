@@ -149,45 +149,131 @@
       totalExpense += expenseVal;
       values.push({ cat, budgetVal, expenseVal });
     });
-    // Determine maximum value among budgets and expenses for scaling bars
-    const maxValue = values.reduce((max, item) => Math.max(max, item.budgetVal, item.expenseVal), 0);
-    // Create bar chart container
-    const chartDiv = document.createElement('div');
-    chartDiv.className = 'bar-chart';
-    values.forEach((item) => {
-      const group = document.createElement('div');
-      group.className = 'bar-group';
-      // Budget bar
-      const budgetBar = document.createElement('div');
-      budgetBar.className = 'bar budget';
-      const budgetHeight = maxValue > 0 ? (item.budgetVal / maxValue) * 100 : 0;
-      budgetBar.style.height = `${budgetHeight}%`;
-      group.appendChild(budgetBar);
-      // Actual expense bar
-      const actualBar = document.createElement('div');
-      actualBar.className = 'bar actual';
-      const actualHeight = maxValue > 0 ? (item.expenseVal / maxValue) * 100 : 0;
-      actualBar.style.height = `${actualHeight}%`;
-      group.appendChild(actualBar);
-      // Label
-      const label = document.createElement('div');
-      label.className = 'bar-label';
-      label.textContent = item.cat;
-      group.appendChild(label);
-      chartDiv.appendChild(group);
+    // Create a pie chart that shows the distribution of expenses by category and savings.
+    // Include a "Saving" slice representing salary minus total expenses. Categories with zero value are omitted.
+    const savingVal = salary - totalExpense;
+    const pieValues = [];
+    const pieLabels = [];
+    const pieColors = [];
+    // Expense categories
+    values.forEach((item, idx) => {
+      if (item.expenseVal > 0) {
+        pieLabels.push(item.cat);
+        pieValues.push(item.expenseVal);
+      }
     });
-    container.appendChild(chartDiv);
+    if (savingVal > 0) {
+      pieLabels.push('Saving');
+      pieValues.push(savingVal);
+    }
+    const totalPie = pieValues.reduce((sum, v) => sum + v, 0);
+    // Generate colors for the slices (use the same function as summary page)
+    const colors = (function generateColors(count) {
+      const arr = [];
+      for (let i = 0; i < count; i++) {
+        const hue = Math.floor((360 / Math.max(count, 1)) * i);
+        arr.push(`hsl(${hue}, 70%, 60%)`);
+      }
+      return arr;
+    })(pieValues.length);
+    // Build conic-gradient segments
+    let startPct = 0;
+    const segments = pieValues.map((val, idx) => {
+      const pct = totalPie > 0 ? (val / totalPie) * 100 : 0;
+      const endPct = startPct + pct;
+      const segment = `${colors[idx]} ${startPct.toFixed(2)}% ${endPct.toFixed(2)}%`;
+      startPct = endPct;
+      return segment;
+    });
+    const gradientStr = segments.join(', ');
+    const pieDiv = document.createElement('div');
+    pieDiv.className = 'pie-chart';
+    pieDiv.style.background = `conic-gradient(${gradientStr})`;
+    const center = document.createElement('div');
+    center.className = 'center';
+    pieDiv.appendChild(center);
+    container.appendChild(pieDiv);
+    // Ranking list with percentages and amounts
+    const rankingDiv = document.createElement('div');
+    rankingDiv.style.marginTop = '0.5rem';
+    const rankingTitle = document.createElement('p');
+    rankingTitle.style.fontWeight = 'bold';
+    rankingTitle.textContent = 'Category & Saving Breakdown';
+    rankingDiv.appendChild(rankingTitle);
+    const ul = document.createElement('ul');
+    ul.style.margin = '0';
+    ul.style.padding = '0 0 0 1rem';
+    pieValues.forEach((val, idx) => {
+      const pct = totalPie > 0 ? ((val / totalPie) * 100).toFixed(1) : '0.0';
+      const li = document.createElement('li');
+      li.textContent = `${pieLabels[idx]}: ${formatCurrency(val)} (${pct}%)`;
+      ul.appendChild(li);
+    });
+    rankingDiv.appendChild(ul);
+    container.appendChild(rankingDiv);
     // Summary information
     const summary = document.createElement('div');
     summary.className = 'visual-summary';
     summary.style.marginTop = '0.5rem';
-    const remainingSalary = salary - totalBudget;
+    const remainingSalary = salary - totalExpense;
     summary.innerHTML =
       `<p><strong>Salary:</strong> ${formatCurrency(salary)}</p>` +
       `<p><strong>Total Budget:</strong> ${formatCurrency(totalBudget)}</p>` +
       `<p><strong>Total Expense:</strong> ${formatCurrency(totalExpense)}</p>` +
-      `<p><strong>Remaining Salary:</strong> ${formatCurrency(remainingSalary)}</p>`;
+      `<p><strong>Saving:</strong> ${formatCurrency(remainingSalary)}</p>`;
     container.appendChild(summary);
+    // Create monthly summary table for all months
+    const table = document.createElement('table');
+    table.className = 'budget-table';
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    ['Month', 'Income', 'Expense', 'Saving'].forEach((txt) => {
+      const th = document.createElement('th');
+      th.textContent = txt;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    // Build summary per month
+    // Group transactions by month
+    const monthly = {};
+    transactions.forEach((txn) => {
+      const d = new Date(txn.date);
+      const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthly[mk]) {
+        monthly[mk] = { income: 0, expense: 0 };
+      }
+      const amt = parseFloat(txn.amount);
+      if (txn.type === 'income') {
+        monthly[mk].income += amt;
+      } else if (txn.type === 'expense') {
+        monthly[mk].expense += amt;
+      }
+    });
+    // For each month, compute salary if available, and saving as salary - expense; else income - expense
+    Object.keys(monthly)
+      .sort()
+      .forEach((mk) => {
+        const row = document.createElement('tr');
+        const monthCell = document.createElement('td');
+        monthCell.textContent = mk;
+        row.appendChild(monthCell);
+        const incCell = document.createElement('td');
+        incCell.textContent = formatCurrency(monthly[mk].income);
+        row.appendChild(incCell);
+        const expCell = document.createElement('td');
+        expCell.textContent = formatCurrency(monthly[mk].expense);
+        row.appendChild(expCell);
+        const savedSalary = budgets[mk] && budgets[mk]['_salary'] ? parseFloat(budgets[mk]['_salary']) : monthly[mk].income;
+        const savingValMonth = savedSalary - monthly[mk].expense;
+        const savCell = document.createElement('td');
+        savCell.textContent = formatCurrency(savingValMonth);
+        row.appendChild(savCell);
+        tbody.appendChild(row);
+      });
+    table.appendChild(tbody);
+    container.appendChild(table);
   }
 
   /**
