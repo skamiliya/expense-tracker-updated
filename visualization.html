@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Financial Visualization</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Financial Visualization</h1>
+    <nav style="text-align: center; margin-bottom: 1rem;">
+      <a href="index.html">Back to Tracker</a> |
+      <a href="summary.html">Summary</a> |
+      <a href="planner.html">Budget Planner</a>
+    </nav>
+    <!-- Controls to select month for visualization -->
+    <div class="budget-controls">
+      <label for="visual-month"><strong>Select Month:</strong></label>
+      <input type="month" id="visual-month" />
+      <button id="load-visual" type="button">Load</button>
+    </div>
+    <!-- Container for the visualization chart and summary -->
+    <div id="visual-container"></div>
+    <p class="note">
+      This page visualizes your budgets versus actual expenses for the selected month.
+      The bar chart shows planned budgets and actual spending per category. The summary below
+      displays salary, total budgets, total expenses and remaining salary.
+    </p>
+    <!-- Include the visualization script with cache-busting query -->
+    <script src="visualization.js?v=20260618" defer></script>
+  </body>
+</html>

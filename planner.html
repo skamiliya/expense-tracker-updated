@@ -3,41 +3,44 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Financial Planner</title>
+    <title>Budget Planner</title>
     <!-- Use the same stylesheet for consistency across pages -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>Financial Planner</h1>
+    <h1>Budget Planner</h1>
     <nav style="text-align: center; margin-bottom: 1rem;">
       <a href="index.html">Back to Tracker</a> |
-      <a href="summary.html">Summary</a>
+      <a href="summary.html">Summary</a> |
+      <a href="visualization.html">Visualization</a>
     </nav>
-    <!-- Controls for selecting the month/date and deposit date (1 or 20) -->
+    <!-- Controls for selecting the planning month, budget date and salary -->
     <div class="budget-controls">
-      <label for="planner-date"><strong>Pilih Tanggal:</strong></label>
-      <input type="date" id="planner-date" />
-      <label for="planner-deposit-date"><strong>Tanggal Bujet (1 atau 20):</strong></label>
-      <select id="planner-deposit-date">
+      <label for="budget-month"><strong>Select Month:</strong></label>
+      <input type="month" id="budget-month" />
+      <label for="budget-date"><strong>Budget Date (1 or 20):</strong></label>
+      <select id="budget-date">
         <option value="1">1</option>
         <option value="20">20</option>
       </select>
+      <label for="salary-input"><strong>Salary:</strong></label>
+      <input type="number" id="salary-input" min="0" placeholder="0" />
       <button id="load-planner" type="button">Load</button>
     </div>
     <!-- Dynamic list for budgets per category -->
     <div id="planner-list"></div>
     <!-- Save button -->
     <div style="text-align: center; margin-top: 1rem;">
-      <button id="save-planner" type="button">Simpan Target</button>
+      <button id="save-planner" type="button">Save Budgets</button>
     </div>
     <p class="note">
-      Halaman ini memungkinkan Anda menetapkan target bulanan untuk setiap kategori
-      pengeluaran dan tabungan. Target mingguan dihitung otomatis dengan
-      membagi target bulanan dengan jumlah minggu dalam bulan yang dipilih.
-      Kategori tabungan bawaan mencakup Investment, Holiday dan Saving. Anda
-      dapat menambahkan kategori lain melalui menu Add Category di halaman utama.
+      Use this page to set your monthly budgets and allocate salary. Weekly budgets
+      are calculated automatically based on the number of ISO weeks in the selected
+      month. Budgets reduce your salary to calculate the remaining amount.
+      Default saving categories include Investment, Holiday and Saving. You can
+      add more categories via Add Category on the main page.
     </p>
     <!-- Include the planner script with cache-busting query -->
-    <script src="planner.js?v=20260617" defer></script>
+    <script src="planner.js?v=20260618" defer></script>
   </body>
 </html>

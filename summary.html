@@ -10,23 +10,39 @@
   <body>
     <h1>Expense Summary</h1>
     <nav style="text-align: center; margin-bottom: 1rem;">
-      <a href="index.html">Back to Tracker</a>
+      <a href="index.html">Back to Tracker</a> |
+      <a href="planner.html">Budget Planner</a> |
+      <a href="visualization.html">Visualization</a>
     </nav>
-    <!-- Date selector for weekly and monthly summary -->
+    <!-- Date range selectors for weekly and monthly summaries -->
     <div class="summary-controls">
-      <label for="summary-date"><strong>Pilih Tanggal:</strong></label>
-      <input type="date" id="summary-date" />
+      <div class="range-group">
+        <label><strong>Weekly Range:</strong></label>
+        <input type="date" id="weekly-start" />
+        <span>to</span>
+        <input type="date" id="weekly-end" />
+      </div>
+      <div class="range-group">
+        <label><strong>Monthly Range:</strong></label>
+        <input type="month" id="monthly-start" />
+        <span>to</span>
+        <input type="month" id="monthly-end" />
+      </div>
       <button id="load-summary" type="button">Load</button>
     </div>
-    <!-- Container for dynamic summary section -->
-    <div id="summary-container"></div>
+    <!-- Aggregated summary card -->
+    <div id="summary-card"></div>
+    <!-- Breakdown containers -->
+    <h2 id="weekly-title" style="display:none;">Weekly Breakdown</h2>
+    <div id="weekly-breakdown"></div>
+    <h2 id="monthly-title" style="display:none;">Monthly Breakdown</h2>
+    <div id="monthly-breakdown"></div>
     <p class="note">
-      Pilih tanggal di atas untuk menampilkan ringkasan mingguan dan bulanan yang
-      mencakup tanggal tersebut. Total pemasukan dan pengeluaran, serta
-      persentase setiap kategori pengeluaran akan ditampilkan untuk minggu
-      (Senin–Minggu) dan bulan yang dipilih.
+      Select a date range above to display aggregated totals and category percentages for
+      the chosen weekly and monthly periods. The summary card shows totals for the entire
+      weekly range. Detailed weekly and monthly breakdowns follow below.
     </p>
     <!-- Append a version query to force browsers to load the latest summary.js, avoiding cache issues -->
-    <script src="summary.js?v=20260617" defer></script>
+    <script src="summary.js?v=20260618" defer></script>
   </body>
 </html>

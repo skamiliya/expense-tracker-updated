@@ -214,6 +214,21 @@ button.add-category-btn:hover {
     margin-bottom: 1rem;
 }
 
+/* Grouping for range inputs on summary page */
+.range-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Ensure month inputs use similar styling as date inputs */
+.summary-controls input[type="month"],
+.summary-controls input[type="date"] {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 /* Responsive adjustments for small screens */
 @media (max-width: 600px) {
     .summary-controls {
@@ -297,6 +312,15 @@ button.add-category-btn:hover {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+/* Style month and number inputs in budget controls */
+.budget-controls input[type="month"],
+.budget-controls input[type="number"] {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
 .budget-controls button {
     padding: 0.4rem 0.75rem;
     background-color: #007aff;
@@ -348,5 +372,72 @@ button.add-category-btn:hover {
     .budget-controls input[type="date"],
     .budget-controls button {
         width: 100%;
+    }
+}
+
+/* ========================= */
+/* Visualization styles */
+
+/* Container for bar chart in financial visualization */
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.75rem;
+    height: 200px;
+    margin: 1rem 0;
+}
+
+/* Group representing a single category's bars */
+.bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40px;
+}
+
+/* Individual bar */
+.bar {
+    width: 16px;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Budget bar color */
+.bar.budget {
+    background-color: #007aff;
+}
+
+/* Actual expense bar color; slight margin to separate bars */
+.bar.actual {
+    background-color: #dc3545;
+    margin-top: 2px;
+}
+
+/* Label below each category */
+.bar-label {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    text-align: center;
+    word-break: break-word;
+}
+
+/* Summary section within visualization */
+.visual-summary p {
+    margin: 0.25rem 0;
+}
+
+@media (max-width: 600px) {
+    .bar-chart {
+        gap: 0.5rem;
+        height: 150px;
+    }
+    .bar-group {
+        width: 32px;
+    }
+    .bar {
+        width: 14px;
+    }
+    .bar-label {
+        font-size: 0.65rem;
     }
 }

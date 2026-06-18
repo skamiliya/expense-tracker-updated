@@ -195,29 +195,35 @@
      * Render the planner list based on the selected month and deposit date.
      */
     function renderPlannerList() {
-        const dateInput = document.getElementById('planner-date');
-        const depositSelect = document.getElementById('planner-deposit-date');
+        const monthInput = document.getElementById('budget-month');
+        const budgetDateSelect = document.getElementById('budget-date');
+        const salaryInput = document.getElementById('salary-input');
         const container = document.getElementById('planner-list');
-        const dateStr = dateInput.value;
+        const monthStr = monthInput.value;
         container.innerHTML = '';
-        if (!dateStr) {
+        if (!monthStr) {
             const msg = document.createElement('p');
-            msg.textContent = 'Silakan pilih tanggal untuk memuat target.';
+            msg.textContent = 'Please select a month to load budgets.';
             container.appendChild(msg);
             return;
         }
-        const monthKey = getMonthKey(dateStr);
+        const monthKey = monthStr;
         const transactions = getTransactions();
         const expenseSums = calculateExpensesByCategory(transactions, monthKey);
         const monthBudgets = getBudgetsForMonth(monthKey);
-        // Use selected deposit date or fallback to saved one
-        const depositDate = depositSelect.value || monthBudgets['_depositDate'] || '20';
-        // Save deposit date to selector to reflect persisted value
-        depositSelect.value = depositDate;
+        // Use selected budget date or fallback to saved one
+        const budgetDate = budgetDateSelect.value || monthBudgets['_budgetDate'] || '20';
+        budgetDateSelect.value = budgetDate;
+        // Salary: use saved salary or keep current input
+        const savedSalary = monthBudgets['_salary'];
+        if (savedSalary !== undefined && savedSalary !== null && savedSalary !== '') {
+            salaryInput.value = savedSalary;
+        }
+        // Build category list from expenses, budgets and default saving categories
         const categories = getCategoryList(expenseSums, monthBudgets);
         if (categories.length === 0) {
             const msg = document.createElement('p');
-            msg.textContent = 'Tidak ada kategori untuk bulan ini.';
+            msg.textContent = 'No categories found for this month.';
             container.appendChild(msg);
             return;
         }
@@ -229,7 +235,7 @@
         table.className = 'budget-table';
         const thead = document.createElement('thead');
         const headRow = document.createElement('tr');
-        ['Kategori', 'Target Bulanan', 'Target Mingguan', 'Terpakai', 'Sisa'].forEach((txt) => {
+        ['Category', 'Monthly Budget', 'Weekly Budget', 'Spent', 'Remaining'].forEach((txt) => {
             const th = document.createElement('th');
             th.textContent = txt;
             headRow.appendChild(th);
@@ -237,6 +243,7 @@
         thead.appendChild(headRow);
         table.appendChild(thead);
         const tbody = document.createElement('tbody');
+        let totalBudget = 0;
         categories.forEach((cat) => {
             const row = document.createElement('tr');
             // Category cell
@@ -254,7 +261,7 @@
             input.value = savedVal && !isNaN(parseFloat(savedVal)) ? savedVal : '';
             input.placeholder = '0';
             input.dataset.category = cat;
-            // When user inputs a number, update weekly budget on the fly
+            // When user inputs a number, update weekly budget, remaining budget and summary on the fly
             input.addEventListener('input', () => {
                 const val = parseFloat(input.value);
                 const weeklyTd = row.querySelector('.weekly-budget');
@@ -264,11 +271,13 @@
                 } else {
                     weeklyTd.textContent = '-';
                 }
-                // Also update remaining if used
+                // Update remaining for this category
                 const used = expenseSums[cat] || 0;
                 const remainingTd = row.querySelector('.remaining-budget');
                 const remaining = (!isNaN(val) ? val : 0) - used;
                 remainingTd.textContent = formatCurrency(remaining);
+                // Update summary totals
+                updateSalarySummary();
             });
             targetCell.appendChild(input);
             row.appendChild(targetCell);
@@ -298,6 +307,30 @@
         });
         table.appendChild(tbody);
         container.appendChild(table);
+        // Summary of salary and budgets
+        const summaryDiv = document.createElement('div');
+        summaryDiv.id = 'salary-summary';
+        summaryDiv.style.marginTop = '0.5rem';
+        container.appendChild(summaryDiv);
+        // Define function to update the salary summary (closure captures necessary variables)
+        function updateSalarySummary() {
+            // Compute total monthly budgets from inputs
+            let total = 0;
+            const inputs = tbody.querySelectorAll('input[type="number"]');
+            inputs.forEach((inp) => {
+                const v = parseFloat(inp.value);
+                if (!isNaN(v)) total += v;
+            });
+            const salVal = parseFloat(salaryInput.value);
+            const remainingSalary = (!isNaN(salVal) ? salVal : 0) - total;
+            summaryDiv.textContent = `Total Budget: ${formatCurrency(total)} \u00a0\u00a0 Remaining Salary: ${formatCurrency(remainingSalary)}`;
+        }
+        // Attach listener to salary input to update summary when changed
+        salaryInput.addEventListener('input', () => {
+            updateSalarySummary();
+        });
+        // Initial update of summary
+        updateSalarySummary();
     }
 
     /**
@@ -305,19 +338,22 @@
      * deposit date and budget values for the selected month.
      */
     function saveBudgets() {
-        const dateInput = document.getElementById('planner-date');
-        const depositSelect = document.getElementById('planner-deposit-date');
-        const dateStr = dateInput.value;
-        if (!dateStr) {
-            alert('Silakan pilih tanggal sebelum menyimpan target.');
+        const monthInput = document.getElementById('budget-month');
+        const budgetDateSelect = document.getElementById('budget-date');
+        const salaryInput = document.getElementById('salary-input');
+        const monthStr = monthInput.value;
+        if (!monthStr) {
+            alert('Please select a month before saving budgets.');
             return;
         }
-        const monthKey = getMonthKey(dateStr);
+        const monthKey = monthStr;
         const container = document.getElementById('planner-list');
         const inputs = container.querySelectorAll('tbody input[type="number"]');
         const monthBudgets = {};
-        // Persist deposit date as a special key
-        monthBudgets['_depositDate'] = depositSelect.value || '20';
+        // Persist budget date and salary as special keys
+        monthBudgets['_budgetDate'] = budgetDateSelect.value || '20';
+        const salVal = parseFloat(salaryInput.value);
+        monthBudgets['_salary'] = !isNaN(salVal) ? salVal : 0;
         inputs.forEach((input) => {
             const cat = input.dataset.category;
             const val = parseFloat(input.value);
@@ -326,9 +362,9 @@
             }
         });
         setBudgetsForMonth(monthKey, monthBudgets);
-        // Re-render to update weekly and remaining values
+        // Re-render to update weekly and remaining values and summary
         renderPlannerList();
-        alert('Target berhasil disimpan.');
+        alert('Budgets saved successfully.');
     }
 
     /**
@@ -336,28 +372,28 @@
      * listeners to the load and save buttons. Also triggers an initial render.
      */
     function init() {
-        const dateInput = document.getElementById('planner-date');
+        const monthInput = document.getElementById('budget-month');
         const loadBtn = document.getElementById('load-planner');
         const saveBtn = document.getElementById('save-planner');
-        // Default date to today; user can still change it
+        const salaryInput = document.getElementById('salary-input');
+        // Default month to current month
         const today = new Date();
-        const defaultDate = today.toISOString().substring(0, 10);
-        dateInput.value = defaultDate;
+        const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        monthInput.value = monthKey;
         // Event listeners
         loadBtn.addEventListener('click', () => {
             renderPlannerList();
         });
-        dateInput.addEventListener('change', () => {
+        monthInput.addEventListener('change', () => {
             renderPlannerList();
         });
-        document.getElementById('planner-deposit-date').addEventListener('change', () => {
-            // Just re-render to reflect deposit date; weekly budgets unaffected
+        document.getElementById('budget-date').addEventListener('change', () => {
             renderPlannerList();
         });
         saveBtn.addEventListener('click', () => {
             saveBudgets();
         });
-        // Initial render
+        // Render initial planner
         renderPlannerList();
     }
     document.addEventListener('DOMContentLoaded', init);

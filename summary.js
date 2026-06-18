@@ -7,6 +7,7 @@
  */
 
 // Wrap everything in an IIFE to avoid polluting the global scope
+// Wrap everything in an IIFE to avoid polluting the global scope
 (function () {
     /**
      * Read transactions from localStorage. If none exist, return an empty array.
@@ -129,20 +130,20 @@
     }
 
     /**
-     * Render the summary for a specific period.
+     * Render the summary for a specific period and append it to a provided container.
+     * Unlike the previous implementation, this function no longer clears the main
+     * summary container. Instead, the caller is responsible for determining
+     * where to append the summary section. It reuses existing grouping logic.
+     *
      * @param {string} periodType 'weekly' or 'monthly'
      * @param {string} periodKey The selected period key (e.g. '2026-W19' or '2026-05')
+     * @param {HTMLElement} appendTo The container element to append the summary section to
      */
-    function renderSummary(periodType, periodKey) {
-        const container = document.getElementById('summary-container');
-        container.innerHTML = '';
+    function renderSummary(periodType, periodKey, appendTo) {
         const transactions = getTransactions();
         const grouped = groupTransactions(transactions, periodType);
         if (!grouped[periodKey]) {
-            // If there's no data for the chosen period, display a friendly message
-            const msg = document.createElement('p');
-            msg.textContent = 'Tidak ada data untuk periode ini.';
-            container.appendChild(msg);
+            // Skip rendering if there's no data for the period
             return;
         }
         const item = grouped[periodKey];
@@ -191,8 +192,6 @@
         // Chart labels with percentage displayed in tooltip only, not in legend
         const colors = generateColors(catLabels.length);
         // Create a simple pie chart using CSS conic-gradient instead of Chart.js
-        // This avoids loading external libraries and works offline. Each category slice is represented
-        // by a color segment in the conic-gradient. If there are no expense categories, no chart is drawn.
         if (catLabels.length > 0) {
             let startPct = 0;
             const segments = catLabels.map((label, idx) => {
@@ -205,87 +204,318 @@
             });
             const gradientStr = segments.join(', ');
             const pieDiv = document.createElement('div');
-            // Assign the pie-chart class so sizing and layout come from CSS
             pieDiv.className = 'pie-chart';
             pieDiv.style.background = `conic-gradient(${gradientStr})`;
-            // Create a white centre donut using a CSS class instead of inline styles for better responsiveness
             const center = document.createElement('div');
             center.className = 'center';
             pieDiv.appendChild(center);
             section.appendChild(pieDiv);
         }
         // Append ranking list below the chart
-        const rankingDiv = document.createElement('div');
-        rankingDiv.style.marginTop = '0.5rem';
-        const rankingTitle = document.createElement('p');
-        rankingTitle.style.fontWeight = 'bold';
-        rankingTitle.textContent = 'Ranking Kategori';
-        rankingDiv.appendChild(rankingTitle);
-        const ul = document.createElement('ul');
-        ul.style.margin = '0';
-        ul.style.padding = '0 0 0 1rem';
-        ranking.forEach((item) => {
-            const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
-            const li = document.createElement('li');
-            li.textContent = `${item.label}: ${formatCurrency(item.value)} (${pct}%)`;
-            ul.appendChild(li);
+        if (ranking.length > 0) {
+            const rankingDiv = document.createElement('div');
+            rankingDiv.style.marginTop = '0.5rem';
+            const rankingTitle = document.createElement('p');
+            rankingTitle.style.fontWeight = 'bold';
+            rankingTitle.textContent = 'Category Ranking';
+            rankingDiv.appendChild(rankingTitle);
+            const ul = document.createElement('ul');
+            ul.style.margin = '0';
+            ul.style.padding = '0 0 0 1rem';
+            ranking.forEach((item) => {
+                const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                const li = document.createElement('li');
+                li.textContent = `${item.label}: ${formatCurrency(item.value)} (${pct}%)`;
+                ul.appendChild(li);
+            });
+            rankingDiv.appendChild(ul);
+            section.appendChild(rankingDiv);
+        }
+        // Append the section to the provided container
+        appendTo.appendChild(section);
+    }
+
+
+    /**
+     * Aggregate transactions within a date range. Only transactions whose date
+     * falls between startDate and endDate (inclusive) are considered. Income
+     * and expense totals are summed separately, and expense categories are
+     * accumulated.
+     *
+     * @param {Array<Object>} transactions
+     * @param {Date} startDate
+     * @param {Date} endDate
+     * @returns {{totalIncome: number, totalExpense: number, categories: Object<string,number>}}
+     */
+    function aggregateTransactionsInRange(transactions, startDate, endDate) {
+        const result = {
+            totalIncome: 0,
+            totalExpense: 0,
+            categories: {},
+        };
+        transactions.forEach((txn) => {
+            const d = new Date(txn.date);
+            if (isNaN(d)) return;
+            if (d >= startDate && d <= endDate) {
+                const amt = parseFloat(txn.amount);
+                if (txn.type === 'income') {
+                    result.totalIncome += amt;
+                } else if (txn.type === 'expense') {
+                    result.totalExpense += amt;
+                    const cat = txn.category;
+                    result.categories[cat] = (result.categories[cat] || 0) + amt;
+                }
+            }
         });
-        rankingDiv.appendChild(ul);
-        // Append ranking list after the chart canvas
-        section.appendChild(rankingDiv);
-        // Append the section to container
+        return result;
+    }
+
+    /**
+     * Generate an array of unique ISO week keys between two dates (inclusive).
+     * The list is sorted in ascending order by year-week. It is possible for
+     * startDate to be after endDate; in that case, the two dates are swapped.
+     *
+     * @param {Date} startDate
+     * @param {Date} endDate
+     * @returns {string[]} Array of week keys in format 'YYYY-Wnn'
+     */
+    function listWeeksInRange(startDate, endDate) {
+        let s = new Date(startDate);
+        let e = new Date(endDate);
+        if (s > e) {
+            const tmp = s;
+            s = e;
+            e = tmp;
+        }
+        const set = new Set();
+        const iter = new Date(s);
+        while (iter <= e) {
+            const week = getISOWeek(iter).toString().padStart(2, '0');
+            const key = `${iter.getFullYear()}-W${week}`;
+            set.add(key);
+            iter.setDate(iter.getDate() + 1);
+        }
+        // Sort the keys by year then week
+        return Array.from(set).sort((a, b) => {
+            const [yA, wA] = a.split('-W').map((v) => parseInt(v, 10));
+            const [yB, wB] = b.split('-W').map((v) => parseInt(v, 10));
+            return yA === yB ? wA - wB : yA - yB;
+        });
+    }
+
+    /**
+     * Generate an array of month keys between two months (inclusive). The month
+     * keys are in format 'YYYY-MM'. If start > end, the two are swapped.
+     *
+     * @param {string} startMonthKey Format 'YYYY-MM'
+     * @param {string} endMonthKey Format 'YYYY-MM'
+     * @returns {string[]} Array of month keys
+     */
+    function listMonthsInRange(startMonthKey, endMonthKey) {
+        const parseKey = (key) => {
+            const [y, m] = key.split('-').map((v) => parseInt(v, 10));
+            return { y, m };
+        };
+        let { y: sy, m: sm } = parseKey(startMonthKey);
+        let { y: ey, m: em } = parseKey(endMonthKey);
+        // Normalize: if start > end, swap
+        if (sy > ey || (sy === ey && sm > em)) {
+            [sy, sm, ey, em] = [ey, em, sy, sm];
+        }
+        const result = [];
+        let cy = sy;
+        let cm = sm;
+        while (cy < ey || (cy === ey && cm <= em)) {
+            result.push(`${cy}-${String(cm).padStart(2, '0')}`);
+            cm++;
+            if (cm > 12) {
+                cm = 1;
+                cy++;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Render an aggregated summary for a range of dates. Shows total income,
+     * total expense, and a pie chart of expense categories. The header shows
+     * the date range in YYYY-MM-DD format.
+     *
+     * @param {Date} startDate
+     * @param {Date} endDate
+     */
+    function renderAggregatedSummary(startDate, endDate) {
+        const container = document.getElementById('summary-card');
+        container.innerHTML = '';
+        if (!startDate || !endDate) return;
+        const transactions = getTransactions();
+        const agg = aggregateTransactionsInRange(transactions, startDate, endDate);
+        const section = document.createElement('section');
+        section.className = 'chart-container';
+        // Header: show date range
+        const header = document.createElement('h3');
+        const format = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+        header.textContent = `${format(startDate)} - ${format(endDate)}`;
+        section.appendChild(header);
+        // Totals display
+        const totalsDiv = document.createElement('div');
+        totalsDiv.style.display = 'flex';
+        totalsDiv.style.justifyContent = 'space-between';
+        totalsDiv.style.marginBottom = '0.5rem';
+        const incomeP = document.createElement('p');
+        incomeP.textContent = `Total Income: ${formatCurrency(agg.totalIncome)}`;
+        const expenseP = document.createElement('p');
+        expenseP.textContent = `Total Expense: ${formatCurrency(agg.totalExpense)}`;
+        totalsDiv.appendChild(incomeP);
+        totalsDiv.appendChild(expenseP);
+        section.appendChild(totalsDiv);
+        // Pie chart of aggregated categories
+        const catLabels = Object.keys(agg.categories);
+        const catData = catLabels.map((k) => agg.categories[k]);
+        const total = catData.reduce((sum, v) => sum + v, 0);
+        const colors = generateColors(catLabels.length);
+        if (catLabels.length > 0) {
+            let startPct = 0;
+            const segments = catLabels.map((label, idx) => {
+                const value = catData[idx];
+                const pct = total > 0 ? (value / total) * 100 : 0;
+                const endPct = startPct + pct;
+                const segment = `${colors[idx]} ${startPct.toFixed(2)}% ${endPct.toFixed(2)}%`;
+                startPct = endPct;
+                return segment;
+            });
+            const gradientStr = segments.join(', ');
+            const pieDiv = document.createElement('div');
+            pieDiv.className = 'pie-chart';
+            pieDiv.style.background = `conic-gradient(${gradientStr})`;
+            const center = document.createElement('div');
+            center.className = 'center';
+            pieDiv.appendChild(center);
+            section.appendChild(pieDiv);
+        }
+        // Ranking list for aggregated categories
+        if (catLabels.length > 0) {
+            const ranking = catLabels
+                .map((label, idx) => ({ label, value: catData[idx] }))
+                .sort((a, b) => b.value - a.value);
+            const rankingDiv = document.createElement('div');
+            rankingDiv.style.marginTop = '0.5rem';
+            const rankingTitle = document.createElement('p');
+            rankingTitle.style.fontWeight = 'bold';
+            rankingTitle.textContent = 'Category Ranking';
+            rankingDiv.appendChild(rankingTitle);
+            const ul = document.createElement('ul');
+            ul.style.margin = '0';
+            ul.style.padding = '0 0 0 1rem';
+            ranking.forEach((item) => {
+                const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+                const li = document.createElement('li');
+                li.textContent = `${item.label}: ${formatCurrency(item.value)} (${pct}%)`;
+                ul.appendChild(li);
+            });
+            rankingDiv.appendChild(ul);
+            section.appendChild(rankingDiv);
+        }
         container.appendChild(section);
     }
 
     /**
-     * Render both weekly and monthly summaries for a given date. Computes the ISO
-     * week key and month key based on the provided date string and renders
-     * sections for each in order: weekly first, then monthly.
-     * @param {string} dateStr Format 'YYYY-MM-DD'
+     * Render range summaries for weekly and monthly periods based on user input.
+     * This function reads the values from the date range inputs, calculates
+     * aggregated totals, and renders per-period breakdowns.
      */
-    function renderWeeklyMonthlyForDate(dateStr) {
-        const container = document.getElementById('summary-container');
-        container.innerHTML = '';
-        if (!dateStr) {
-            return;
+    function renderRangeSummaries() {
+        // Get DOM elements
+        const weeklyStartEl = document.getElementById('weekly-start');
+        const weeklyEndEl = document.getElementById('weekly-end');
+        const monthlyStartEl = document.getElementById('monthly-start');
+        const monthlyEndEl = document.getElementById('monthly-end');
+        const weeklyBreakdown = document.getElementById('weekly-breakdown');
+        const monthlyBreakdown = document.getElementById('monthly-breakdown');
+        const weeklyTitle = document.getElementById('weekly-title');
+        const monthlyTitle = document.getElementById('monthly-title');
+        // Clear existing breakdowns
+        weeklyBreakdown.innerHTML = '';
+        monthlyBreakdown.innerHTML = '';
+        // Parse weekly dates
+        const ws = weeklyStartEl.value ? new Date(weeklyStartEl.value) : null;
+        const we = weeklyEndEl.value ? new Date(weeklyEndEl.value) : null;
+        if (ws && we) {
+            // Render aggregated summary for the weekly date range
+            renderAggregatedSummary(ws, we);
+            // List ISO week keys within range and render each summary
+            const weekKeys = listWeeksInRange(ws, we);
+            if (weekKeys.length > 0) {
+                weeklyTitle.style.display = '';
+                weekKeys.forEach((key) => {
+                    renderSummary('weekly', key, weeklyBreakdown);
+                });
+            } else {
+                weeklyTitle.style.display = 'none';
+            }
+        } else {
+            // If weekly range is incomplete, clear aggregated summary and hide weekly title
+            document.getElementById('summary-card').innerHTML = '';
+            weeklyTitle.style.display = 'none';
         }
-        const d = new Date(dateStr);
-        if (isNaN(d)) {
-            return;
+        // Parse monthly range
+        const ms = monthlyStartEl.value;
+        const me = monthlyEndEl.value;
+        if (ms && me) {
+            const monthKeys = listMonthsInRange(ms, me);
+            if (monthKeys.length > 0) {
+                monthlyTitle.style.display = '';
+                monthKeys.forEach((key) => {
+                    renderSummary('monthly', key, monthlyBreakdown);
+                });
+            } else {
+                monthlyTitle.style.display = 'none';
+            }
+        } else {
+            monthlyTitle.style.display = 'none';
         }
-        // Compute ISO week key
-        const week = getISOWeek(d).toString().padStart(2, '0');
-        const weeklyKey = `${d.getFullYear()}-W${week}`;
-        // Compute month key
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const monthKey = `${d.getFullYear()}-${month}`;
-        // Render weekly summary if there is data
-        renderSummary('weekly', weeklyKey);
-        // Render monthly summary if there is data
-        renderSummary('monthly', monthKey);
     }
 
 
     /**
-     * Initialize the summary page: set up the date selector and render the
-     * weekly and monthly summaries for today's date by default.
+     * Initialize the summary page: set up default date ranges and attach
+     * event listeners to the Load button. The default weekly range is the
+     * current ISO week (Monday through Sunday). The default monthly range is
+     * the current month. Once initialized, the summaries for these ranges
+     * are rendered automatically.
      */
     function init() {
-        const dateInput = document.getElementById('summary-date');
+        const weeklyStartEl = document.getElementById('weekly-start');
+        const weeklyEndEl = document.getElementById('weekly-end');
+        const monthlyStartEl = document.getElementById('monthly-start');
+        const monthlyEndEl = document.getElementById('monthly-end');
         const loadBtn = document.getElementById('load-summary');
-        // Default to today's date
         const today = new Date();
-        const defaultDate = today.toISOString().substring(0, 10);
-        dateInput.value = defaultDate;
-        // Event listeners
+        // Compute current ISO week start (Monday) and end (Sunday)
+        const currentWeek = getISOWeek(today);
+        const weekStart = getDateOfISOWeek(currentWeek, today.getFullYear());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        // Default weekly range
+        weeklyStartEl.value = weekStart.toISOString().substring(0, 10);
+        weeklyEndEl.value = weekEnd.toISOString().substring(0, 10);
+        // Default monthly range: current month
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        const monthKey = `${year}-${month}`;
+        monthlyStartEl.value = monthKey;
+        monthlyEndEl.value = monthKey;
+        // Event listener for Load button
         loadBtn.addEventListener('click', () => {
-            renderWeeklyMonthlyForDate(dateInput.value);
+            renderRangeSummaries();
         });
-        dateInput.addEventListener('change', () => {
-            renderWeeklyMonthlyForDate(dateInput.value);
-        });
-        // Initial render
-        renderWeeklyMonthlyForDate(dateInput.value);
+        // Render initial summaries
+        renderRangeSummaries();
     }
 
     document.addEventListener('DOMContentLoaded', init);
